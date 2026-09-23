@@ -1,4 +1,5 @@
 import type { Database } from "bun:sqlite";
+import { formatCents } from "./money/index.ts";
 
 interface ExpenseRow {
   createdAt: string;
@@ -26,19 +27,15 @@ function fetchExpenseRows(db: Database, groupId: string): ExpenseRow[] {
 }
 
 /**
- * Build the CSV export for a group's expenses.
- *
- * SEEDED DEFECT (issue #3): the amount column prints the raw integer cents
- * (e.g. "1000") instead of a formatted amount ("10.00"). Baseline tests
- * only check the header row and the row count, not the amount column's
- * formatting, so this ships undetected. The fix should reuse
- * `formatCents` from src/money (see .claude/skills/handling-money).
+ * Build the CSV export for a group's expenses. The amount column is
+ * formatted as a decimal ("10.00") here, at the output boundary.
  */
 export function exportCsv(db: Database, groupId: string): string {
   const rows = fetchExpenseRows(db, groupId);
   const header = "date,payer,description,amount\n";
   const lines = rows.map(
-    (r) => `${r.createdAt},${csvEscape(r.payerName)},${csvEscape(r.description)},${r.amountCents}`,
+    (r) =>
+      `${r.createdAt},${csvEscape(r.payerName)},${csvEscape(r.description)},${formatCents(r.amountCents)}`,
   );
   return header + lines.join("\n") + (lines.length > 0 ? "\n" : "");
 }

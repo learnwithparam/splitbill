@@ -38,6 +38,11 @@ describe("splitbill export", () => {
     const output = run(["export", "flat-4b"], setupDb());
     expect(output.split("\n")[0]).toBe("date,payer,description,amount");
   });
+
+  test("formats the amount column as a decimal", () => {
+    const output = run(["export", "flat-4b"], setupDb());
+    expect(output.split("\n").some((line) => line.endsWith(",45.00"))).toBe(true);
+  });
 });
 
 describe("splitbill with no command", () => {

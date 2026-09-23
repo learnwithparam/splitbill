@@ -137,5 +137,6 @@ describe("GET /api/groups/:id/export.csv", () => {
     const lines = text.trim().split("\n");
     expect(lines[0]).toBe("date,payer,description,amount");
     expect(lines.length).toBe(4); // header + 3 seeded Flat 4B expenses
+    expect(lines.some((line) => line.endsWith(",45.00"))).toBe(true);
   });
 });
