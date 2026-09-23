@@ -1,20 +1,5 @@
 {
   "permissions": {
-    "allow": [
-      "Bash(bun *)",
-      "Bash(git status *)",
-      "Bash(git diff *)",
-      "Bash(git add *)",
-      "Bash(git commit *)",
-      "Bash(git log *)",
-      "Bash(git show *)",
-      "Bash(git worktree list)",
-      "Bash(cat *)",
-      "Bash(ls *)",
-      "Bash(grep *)",
-      "Bash(find *)",
-      "Bash(mkdir -p *)"
-    ],
     "deny": [
       "Bash(gh *)",
       "Bash(git push*)",
