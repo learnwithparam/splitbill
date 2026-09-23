@@ -1,0 +1,17 @@
+name: Docs
+description: Something is missing, wrong, or unclear in the docs.
+labels: ["docs"]
+body:
+  - type: textarea
+    id: where
+    attributes:
+      label: Where
+      description: File or section (e.g. README.md, AGENTS.md).
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What's missing or wrong
+    validations:
+      required: true

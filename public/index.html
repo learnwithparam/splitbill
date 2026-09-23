@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>splitbill</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; }
+    h1 { font-size: 1.4rem; }
+    label { display: block; margin: 1rem 0 0.25rem; font-size: 0.85rem; color: #555; }
+    input { font: inherit; padding: 0.4rem; width: 100%; box-sizing: border-box; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    th, td { text-align: left; padding: 0.4rem 0.5rem; border-bottom: 1px solid #eee; font-size: 0.9rem; }
+    .balance-pos { color: #147a3f; }
+    .balance-neg { color: #b3261e; }
+    #error { color: #b3261e; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>splitbill</h1>
+  <p>Paste a member token to view a group's expenses and balances.</p>
+
+  <label for="token">Member token</label>
+  <input id="token" placeholder="goa-asha" autocomplete="off" />
+
+  <label for="group">Group id</label>
+  <input id="group" placeholder="goa-trip" autocomplete="off" />
+
+  <div id="error"></div>
+  <div id="result"></div>
+
+  <script>
+    const tokenInput = document.getElementById("token");
+    const groupInput = document.getElementById("group");
+    const errorEl = document.getElementById("error");
+    const resultEl = document.getElementById("result");
+
+    async function load() {
+      errorEl.textContent = "";
+      resultEl.innerHTML = "";
+      const token = tokenInput.value.trim();
+      const groupId = groupInput.value.trim();
+      if (!token || !groupId) return;
+
+      const headers = { Authorization: `Bearer ${token}` };
+      const [groupRes, expensesRes] = await Promise.all([
+        fetch(`/api/groups/${encodeURIComponent(groupId)}`, { headers }),
+        fetch(`/api/groups/${encodeURIComponent(groupId)}/expenses`, { headers }),
+      ]);
+
+      if (!groupRes.ok) {
+        errorEl.textContent = `Error ${groupRes.status}: could not load group`;
+        return;
+      }
+      const { group, members, balances } = await groupRes.json();
+      const { expenses } = await expensesRes.json();
+
+      const memberRows = balances
+        .map(
+          (b) =>
+            `<tr><td>${b.name}</td><td class="${b.netCents >= 0 ? "balance-pos" : "balance-neg"}">${(b.netCents / 100).toFixed(2)}</td></tr>`,
+        )
+        .join("");
+
+      const expenseRows = expenses
+        .map(
+          (e) =>
+            `<tr><td>${e.createdAt.slice(0, 10)}</td><td>${e.payerName}</td><td>${e.description}</td><td>${(e.amountCents / 100).toFixed(2)}</td></tr>`,
+        )
+        .join("");
+
+      resultEl.innerHTML = `
+        <h2>${group.name}</h2>
+        <p>${members.length} members</p>
+        <h3>Balances</h3>
+        <table><thead><tr><th>Member</th><th>Net</th></tr></thead><tbody>${memberRows}</tbody></table>
+        <h3>Expenses</h3>
+        <table><thead><tr><th>Date</th><th>Payer</th><th>Description</th><th>Amount</th></tr></thead><tbody>${expenseRows}</tbody></table>
+      `;
+    }
+
+    tokenInput.addEventListener("change", load);
+    groupInput.addEventListener("change", load);
+  </script>
+</body>
+</html>
