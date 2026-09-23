@@ -2,11 +2,39 @@
   "repo": "learnwithparam/splitbill",
   "base": "main",
   "baselineTag": "baseline",
+  "agentCommands": {
+    "read": [],
+    "build": [
+      "bun *",
+      "make *"
+    ],
+    "verify": [
+      "bun *",
+      "make *",
+      ".factory/gates.sh"
+    ]
+  },
   "gates": [
-    { "name": "typecheck", "cmd": "make typecheck", "required": true },
-    { "name": "test", "cmd": "make test", "required": true },
-    { "name": "skills", "cmd": "make skills-validate", "required": true },
-    { "name": "audit", "cmd": "make audit", "required": false }
+    {
+      "name": "typecheck",
+      "cmd": "make typecheck",
+      "required": true
+    },
+    {
+      "name": "test",
+      "cmd": "make test",
+      "required": true
+    },
+    {
+      "name": "skills",
+      "cmd": "make skills-validate",
+      "required": true
+    },
+    {
+      "name": "audit",
+      "cmd": "make audit",
+      "required": false
+    }
   ],
   "protectedPaths": [
     "src/auth/**",
@@ -31,19 +59,33 @@
   "riskCriteria": {
     "_comment": "Guidance for the factory-plan skill, read by the agent, not by the runner. The runner only consumes riskPolicy.autoApproveLowRisk above.",
     "low": {
-      "criteria": ["docs-only", "test-only", "single non-protected module, no schema or API-shape change"],
+      "criteria": [
+        "docs-only",
+        "test-only",
+        "single non-protected module, no schema or API-shape change"
+      ],
       "approval": "auto-approve if the Auto-approve low-risk plans toggle is on, else /factory approve"
     },
     "medium": {
-      "criteria": ["more than one module touched", "adds or changes an API route or DB column", "dependency minor/patch bump"],
+      "criteria": [
+        "more than one module touched",
+        "adds or changes an API route or DB column",
+        "dependency minor/patch bump"
+      ],
       "approval": "/factory approve"
     },
     "high": {
-      "criteria": ["dependency major version bump", "touches a protected path", "planner confidence is low"],
+      "criteria": [
+        "dependency major version bump",
+        "touches a protected path",
+        "planner confidence is low"
+      ],
       "approval": "/factory approve"
     },
     "protectedPathRequired": {
-      "criteria": ["plan requires editing a protected glob"],
+      "criteria": [
+        "plan requires editing a protected glob"
+      ],
       "approval": "refused at triage; never planned or built by an agent"
     }
   }
