@@ -54,3 +54,6 @@ untested.
 yourself. Merge one with an admin bypass (`gh pr merge <n> --squash --admin`), then run
 `bin/factory reset --repo-dir ../splitbill`: the dry-run lists that merge as a `drop-commit`, and the real
 reset puts `main` back on the baseline. The factory never merges.
+
+`main` is protected, so rewinding it needs "Allow force pushes" on for you (Settings, Branches). Turn it on
+first; if it is off the reset fails on its first push and changes nothing. Turn it off again afterwards.
