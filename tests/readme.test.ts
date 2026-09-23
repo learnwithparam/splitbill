@@ -27,7 +27,7 @@ describe("README Run it section", () => {
     const port = section.match(/http:\/\/localhost:(\d+)/)?.[1];
     expect(port).toBeDefined();
     const server = await Bun.file(new URL("../src/server.ts", import.meta.url)).text();
-    expect(server).toContain(`process.env.PORT ?? ${port}`);
+    expect(server).toMatch(new RegExp(`process\\.env\\.PORT\\s*\\?\\?\\s*${port}\\b`));
   });
 
   test("documented CLI example lists the demo groups", async () => {
@@ -36,6 +36,7 @@ describe("README Run it section", () => {
       env: { ...process.env, SPLITBILL_DB: ":memory:" },
       stdout: "pipe",
       stderr: "pipe",
+      timeout: 10_000,
     });
     const [output, errors, code] = await Promise.all([
       new Response(proc.stdout).text(),
