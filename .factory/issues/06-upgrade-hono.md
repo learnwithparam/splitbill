@@ -3,6 +3,8 @@ title: "Upgrade hono 3.12.12 to 4.x"
 labels: [dependency]
 ---
 
+<!-- factory:scan id=audit:hono -->
+
 ## Package
 
 hono

@@ -15,9 +15,6 @@
     ".agents/**",
     ".github/**"
   ],
-  "protectedExceptions": [
-    { "glob": "bun.lock", "allowedForIssueTypes": ["dependency"] }
-  ],
   "riskPolicy": {
     "autoApproveLowRisk": true
   },

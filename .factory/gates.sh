@@ -40,12 +40,13 @@ for i in $(seq 0 $((gate_count - 1))); do
   required=$(jq -r ".gates[$i].required" "$CONFIG")
 
   echo "--- gate: $name ($cmd) ---"
-  if eval "$cmd" > /tmp/factory-gate-"$name".log 2>&1; then
+  gate_log=$(mktemp "${TMPDIR:-/tmp}/factory-gate-${name}.XXXXXX")
+  if eval "$cmd" > "$gate_log" 2>&1; then
     echo "PASS: $name"
     passed=$((passed + 1))
   else
     echo "FAIL: $name"
-    tail -n 20 /tmp/factory-gate-"$name".log
+    tail -n 20 "$gate_log"
     if [ "$required" = "true" ]; then
       failed=$((failed + 1))
       required_failed_names+=("$name")
@@ -54,6 +55,7 @@ for i in $(seq 0 $((gate_count - 1))); do
       optional_failed_names+=("$name")
     fi
   fi
+  rm -f "$gate_log"
 done
 
 all_failed_names=()
