@@ -28,7 +28,7 @@ interface GroupDetailBody {
   balances: { memberId: string; netCents: number }[];
 }
 interface ExpensesListBody {
-  expenses: { id: string; description: string }[];
+  expenses: { id: string; groupId: string; description: string }[];
 }
 interface CreateExpenseBody {
   expense: { id: string };
@@ -87,6 +87,26 @@ describe("GET /api/groups/:id/expenses", () => {
     const body = await asJson<ExpensesListBody>(res);
     expect(body.expenses.length).toBe(1);
     expect(body.expenses[0]?.description).toBe("Fuel");
+  });
+
+  test("search does not leak other groups' expenses", async () => {
+    const app = setupApp();
+    const q = encodeURIComponent("' OR 1=1 --");
+    const res = await app.request(`/api/groups/goa-trip/expenses?q=${q}&limit=100`, { headers: auth("goa-asha") });
+    expect(res.status).toBe(200);
+    const body = await asJson<ExpensesListBody>(res);
+    const descriptions = body.expenses.map((e) => e.description);
+    expect(descriptions).not.toContain("Electricity bill");
+    expect(descriptions).not.toContain("Internet bill");
+    for (const e of body.expenses) expect(e.groupId).toBe("goa-trip");
+  });
+
+  test("search treats quotes in q as literal text", async () => {
+    const app = setupApp();
+    const res = await app.request(`/api/groups/goa-trip/expenses?q=${encodeURIComponent("O'Brien")}`, { headers: auth("goa-asha") });
+    expect(res.status).toBe(200);
+    const body = await asJson<ExpensesListBody>(res);
+    expect(body.expenses).toEqual([]);
   });
 });
 

@@ -53,13 +53,6 @@ export interface ListExpensesOptions {
 /**
  * List (and optionally search) a group's expenses, newest first, keyset
  * paginated.
- *
- * SEEDED DEFECT (issue #4, SQL injection): the free-text `query` is spliced
- * directly into the SQL string instead of being bound as a parameter, so a
- * crafted `q` such as `' OR 1=1 --` breaks out of the LIKE clause and can
- * read expenses belonging to OTHER groups. Baseline tests only search with
- * plain words, so this ships undetected. The fix binds `query` as a `?`
- * parameter (see .claude/skills/fixing-a-vulnerability).
  */
 export function listExpenses(db: Database, groupId: string, options: ListExpensesOptions = {}): ExpenseWithPayer[] {
   const limit = Math.min(options.limit ?? 20, 100);
@@ -69,10 +62,10 @@ export function listExpenses(db: Database, groupId: string, options: ListExpense
     conditions.push("e.created_at < (SELECT created_at FROM expenses WHERE id = ?)");
     params.push(options.cursor);
   }
-  if (options.query) {
-    // VULNERABLE: spliced directly instead of bound as a parameter. See the
-    // SEEDED DEFECT note on this function's doc comment (issue #4).
-    conditions.push(`e.description LIKE '%${options.query}%'`);
+  const { query } = options;
+  if (query) {
+    conditions.push("e.description LIKE ?");
+    params.push(`%${query}%`);
   }
   const sql = `
     SELECT e.id, e.group_id as groupId, e.payer_id as payerId, e.amount_cents as amountCents,
