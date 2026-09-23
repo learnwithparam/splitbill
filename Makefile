@@ -13,7 +13,9 @@ typecheck:
 	bun x tsc --noEmit
 
 skills-validate:
-	@if command -v uvx >/dev/null 2>&1; then \
+	@if [ ! -d .claude/skills ]; then \
+		echo "no .claude/skills directory, skipping skills validation"; \
+	elif command -v uvx >/dev/null 2>&1; then \
 		for d in .claude/skills/*/; do \
 			echo "validating $$d"; \
 			uvx --from "git+https://github.com/agentskills/agentskills#subdirectory=skills-ref" skills-ref validate "$$d" || exit 1; \
