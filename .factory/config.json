@@ -1,5 +1,4 @@
 {
-  "repo": "learnwithparam/splitbill",
   "base": "main",
   "baselineTag": "baseline",
   "agentCommands": {
