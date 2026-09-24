@@ -57,3 +57,35 @@ reset puts `main` back on the baseline. The factory never merges.
 
 `main` is protected, so rewinding it needs "Allow force pushes" on for you (Settings, Branches). Turn it on
 first; if it is off the reset fails on its first push and changes nothing. Turn it off again afterwards.
+
+## By release
+
+Each section names one thing to show for that factory release. Run them from `../factory`.
+
+### v2.3: the boundary tells the truth
+
+Label "README has no run steps" `factory:ready`, then comment `/factory cancel` while it waits for plan approval.
+The issue closes, the PR (if any) closes, and the worktree is gone. Then `bin/factory doctor --repo-dir ../splitbill --json`
+shows every check and exits 4 if one fails.
+
+### v2.4: the cockpit
+
+`bin/factory inbox --repo-dir ../splitbill` lists what waits on you. Acting from the dashboard Inbox or with
+`bin/factory inbox 12 approve` posts the same `/factory approve` comment you would type. `bin/factory logs 12 --follow`
+tails the run.
+
+### v2.5: any agent, counted honestly
+
+Run the cent-split issue and open Analytics: each stage shows its agent, tokens and cost. A stage whose agent reports no
+usage shows "Not reported", never $0.00. Read-only stages (triage, plan, verify) cannot write files.
+
+### v2.6: one factory, any agent
+
+Open the Agents page: each preset, its pinned version, the installed version and its doctor rows. Add a second agent under
+`agents` in `.factory/config.json` and point `stages.verify` at it. `bin/factory install --update` (or `install.sh --agents`)
+links the skills into that agent's own directory.
+
+### v2.6.1: presets that work on first use
+
+`bin/factory verify-agent <name> --repo-dir ../splitbill --issue <N>` runs one issue on that agent and records a fixture.
+Only Claude is verified by the maintainers; the rest say "Verified by participants: not yet" until someone does.
