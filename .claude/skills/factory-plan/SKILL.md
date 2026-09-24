@@ -16,6 +16,8 @@ runner posts and labels. Runs after `factory-triage` returned `proceed`.
   handoff: type, risk hint, done_when, files_expected.
 - `.factory/runs/issue-<N>/revise.md` — present only when a human sent
   `/factory revise <text>`: their feedback on the previous plan revision.
+  `revision.md` beside it repeats that feedback with every earlier round
+  of feedback and the previous summary; honour all of it.
 - `AGENTS.md`, `.factory/charter.md`, and the repo's skills index
   (`.claude/skills/*/SKILL.md`, minus `factory-*`) — what repo-specific
   skills exist to apply (e.g. `handling-money`).
@@ -31,7 +33,7 @@ own context doing the same search yourself.
 
 ## 3. Write the plan
 
-One line goal. Acceptance criteria `AC-1..n`, each checkable by a named
+One line goal. Acceptance criteria `AC-1..n` (ids are never renumbered on a revision), each checkable by a named
 command or test. Non-goals `NG-1..n`: binding — the verifier fails a diff
 that crosses one, so write ones you actually mean. Files to touch. Tests to
 write first, named. Repo skills to apply, or "none". Risk: low, medium, or
@@ -63,5 +65,14 @@ plan, or the previous revision + 1 when `revise.md` is present. Then write
 }
 ```
 
+`outcome` is optional: `complete` (the default), `blocked` (you cannot go on and a human must
+look; put the reason in `summary`), or `failed`. No other fields are allowed.
+
 `autoApproveEligible` is your judgment call, not just a mirror of `risk`:
 set it false for anything you'd want a second look at even at low risk.
+
+If you stop to ask a question instead (see the escape hatch in step 3), write
+`question-comment.md` with the `factory-comment` skill's `question.md`
+template and a `plan.json` of `{"status": "needs-info", "risk": "low",
+"revision": 1, "files": [], "autoApproveEligible": false}`. The runner posts
+the question and resumes planning once a trusted reply arrives.

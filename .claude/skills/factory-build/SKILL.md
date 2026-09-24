@@ -35,9 +35,9 @@ Quote the exact gate line — the command and its pass/fail output — verbatim
 in the status comment. Do not paraphrase or summarize a failure as "some
 tests failed"; show the line that failed.
 
-If the gate fails and you can see why, fix it and re-run. Don't loop more
-than a few times guessing; if you can't get it green, say so in the status
-comment and stop — `factory-verify` will catch a red gate anyway, but a
+If the gate fails and you can see why, fix it and re-run. Stop after 3
+failed gate runs: write `"outcome": "blocked"` and say so in the status
+comment. If you can't get it green, say so in the status comment and stop — `factory-verify` will catch a red gate anyway, but a
 build that knows it's broken shouldn't pretend otherwise.
 
 ## 4. Escape hatch: back to needs-info mid-build
@@ -47,7 +47,7 @@ only a human can make, stop here rather than guessing:
 
 - Write `.factory/runs/issue-<N>/question-comment.md` with the
   `factory-comment` skill's `question.md` template.
-- Write `.factory/runs/issue-<N>/build.json` with `"status": "needs_info"`.
+- Write `.factory/runs/issue-<N>/build.json` with `"status": "needs-info"`.
 - Leave the worktree and any partial commits as they are — the runner
   preserves both the worktree and the current stage so build can resume
   from here once the question is answered, instead of starting over.
@@ -62,14 +62,15 @@ Write `.factory/runs/issue-<N>/status-comment.md` using the
 ```json
 {
   "status": "green",
-  "gate_line": "make check: 42 pass, 0 fail",
+  "gate_line": "FACTORY_GATES: status=GREEN passed=1 failed=0 skipped=0",
   "rounds": 1
 }
 ```
 
+`outcome` is optional: `complete` (the default), `blocked` (you cannot go on and a human must
+look; put the reason in `summary`), or `failed`. No other fields are allowed.
+
 `status` is one of `green`, `red` (gate never went green after reasonable
-effort), or `needs-info` (see step 4). `rounds` is this issue's build
-attempt count so far, including any verify-reject that sent you back here
-— read the previous `build.json` if present and increment it yourself; the
-runner does not track this for you. Leave the worktree exactly as you want
+effort), or `needs-info` (see step 4). Write `"rounds": 1`: the runner counts
+build attempts itself and replaces the value. Leave the worktree exactly as you want
 it committed — the runner commits and pushes it verbatim.

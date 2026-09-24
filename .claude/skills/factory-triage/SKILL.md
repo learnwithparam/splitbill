@@ -62,10 +62,13 @@ Use the `factory-comment` skill's `triage.md` template to write
   "risk": "low",
   "done_when": "one sentence, checkable by a command or test",
   "files_expected": ["src/…"],
-  "gate_level": "make check",
+  "gate_level": "full",
   "confidence": 0.8
 }
 ```
+
+`outcome` is optional: `complete` (the default), `blocked` (you cannot go on and a human must
+look; put the reason in `summary`), or `failed`. No other fields are allowed.
 
 If `disposition` is `needs-info`, also write
 `.factory/runs/issue-<N>/question-comment.md` using the `question.md`
