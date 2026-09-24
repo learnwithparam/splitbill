@@ -61,4 +61,9 @@ describe("splitCents", () => {
       });
     }
   });
+
+  test("leaves negative and non-integer totals floored as before", () => {
+    expect(splitCents(-1000, ["a", "b", "c"])).toEqual({ a: -334, b: -334, c: -334 });
+    expect(splitCents(10.5, ["a", "b"])).toEqual({ a: 5, b: 5 });
+  });
 });

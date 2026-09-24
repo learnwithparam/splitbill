@@ -32,14 +32,16 @@ export function parseCents(input: string): number {
  * Remainder rule (.claude/skills/handling-money/references/rules.md): every
  * member gets floor(totalCents / n), and the first `remainder` members, in
  * the order passed in, get one extra cent, so the shares always sum to
- * exactly totalCents.
+ * exactly totalCents. Negative or non-integer totals are out of scope for
+ * the rule and keep the plain floored share, unchanged from before.
  */
 export function splitCents(totalCents: number, memberIds: string[]): Record<string, number> {
   if (memberIds.length === 0) {
     throw new Error("cannot split among zero members");
   }
   const base = Math.floor(totalCents / memberIds.length);
-  const remainder = totalCents - base * memberIds.length;
+  const remainder =
+    Number.isInteger(totalCents) && totalCents >= 0 ? totalCents - base * memberIds.length : 0;
   const shares: Record<string, number> = {};
   memberIds.forEach((id, i) => {
     shares[id] = i < remainder ? base + 1 : base;
