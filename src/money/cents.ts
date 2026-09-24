@@ -29,21 +29,22 @@ export function parseCents(input: string): number {
 /**
  * Split an integer amount of cents evenly across member ids.
  *
- * Applies the remainder rule: every member gets floor(totalCents / n), and
- * the first `remainder` members (in the order passed) get one extra cent, so
- * the shares always sum to exactly totalCents. See
+ * SEEDED DEFECT (issue #2): this floors every share and drops the
+ * remainder instead of handing the leftover cents to the first N members,
+ * so the shares can sum to less than totalCents. `bun test` does not catch
+ * this because the baseline tests only split amounts that divide evenly.
+ * The correct remainder rule is documented in
  * .claude/skills/handling-money/references/rules.md.
  */
 export function splitCents(totalCents: number, memberIds: string[]): Record<string, number> {
   if (memberIds.length === 0) {
     throw new Error("cannot split among zero members");
   }
-  const base = Math.floor(totalCents / memberIds.length);
-  const remainder = totalCents - base * memberIds.length;
+  const share = Math.floor(totalCents / memberIds.length);
   const shares: Record<string, number> = {};
-  memberIds.forEach((id, i) => {
-    shares[id] = i < remainder ? base + 1 : base;
-  });
+  for (const id of memberIds) {
+    shares[id] = share;
+  }
   return shares;
 }
 
