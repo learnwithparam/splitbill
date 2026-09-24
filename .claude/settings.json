@@ -6,7 +6,9 @@
       "Bash(git merge *)",
       "Bash(git reset --hard *)",
       "Bash(git push --force*)",
-      "Bash(git push -f*)"
+      "Bash(git push -f*)",
+      "Read(~/.config/gh/**)",
+      "Read(~/.ssh/**)"
     ]
   },
   "hooks": {
