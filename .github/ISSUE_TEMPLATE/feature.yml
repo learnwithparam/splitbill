@@ -1,32 +1,27 @@
-name: Feature request
-description: Propose a new capability or change to splitbill.
+name: Feature
+description: A new capability.
 labels: ["feature"]
 body:
   - type: textarea
-    id: problem
+    id: goal
     attributes:
-      label: Problem
-      description: What can't a user do today?
+      label: What should this do, and why
     validations:
       required: true
   - type: textarea
-    id: outcome
+    id: acceptance
     attributes:
-      label: Desired outcome
-      description: What should be possible once this ships?
+      label: Acceptance criteria
+      description: One checkable statement per line; factory-plan turns these into AC-n.
     validations:
       required: true
   - type: textarea
-    id: acceptance-criteria
+    id: non-goals
     attributes:
-      label: Acceptance criteria (optional)
-      description: If you already know how to check this is done, list it - the planning agent will propose these if left blank.
-    validations:
-      required: false
-  - type: textarea
-    id: out-of-scope
+      label: Non-goals
+      description: What this should deliberately not cover.
+  - type: markdown
     attributes:
-      label: Out of scope
-      description: What should this request explicitly NOT include?
-    validations:
-      required: false
+      value: |
+        This only sets the `feature` label. Add `factory:ready` once it is
+        triaged and you want the factory to pick it up.

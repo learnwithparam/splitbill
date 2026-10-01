@@ -18,13 +18,22 @@ files inside this worktree and write the artifact files below.
 - The repo skills named in the plan (`.claude/skills/<name>/SKILL.md`) —
   read and follow them; they encode repo-specific rules you don't know.
 
-## 2. Build test-first, smallest change
+## 2. Build to the plan's proof, smallest change
 
-For each AC, write its named test first, watch it fail for the right
-reason, then write the smallest change that makes it pass. Do not touch a
-file outside the plan's "files to touch" list without a real reason — if
-you find you need to, that's a signal to stop and ask (step 4), not to
-quietly expand scope. Never cross a non-goal (NG-n); those are binding.
+Read `plan.json`'s `proof` (absent means `test`).
+
+- **`test`**: for each AC, write its named test first, watch it fail for the
+  right reason, then write the smallest change that makes it pass.
+- **`check`**: no test file is expected. For each AC, run the plan's named
+  check command against your change and confirm it proves that AC (e.g. a
+  repo-specific audit script reports the fixed line, a prose lint reports
+  clean, a link check finds no dead link). Re-run every named check before
+  step 3, not just the one for the AC you just touched.
+
+Either way: do not touch a file outside the plan's "files to touch" list
+without a real reason — if you find you need to, that's a signal to stop and
+ask (step 5), not to quietly expand scope. Never cross a non-goal (NG-n);
+those are binding.
 
 Apply every repo skill named in the plan as you go, not as an afterthought.
 
@@ -40,7 +49,19 @@ failed gate runs: write `"outcome": "blocked"` and say so in the status
 comment. If you can't get it green, say so in the status comment and stop — `factory-verify` will catch a red gate anyway, but a
 build that knows it's broken shouldn't pretend otherwise.
 
-## 4. Escape hatch: back to needs-info mid-build
+## 4. UI route: capture screenshots
+
+Skip unless `triage.json`'s `type` is `ui`. `.claude/skills/lwp-design/SKILL.md`
+names the state list, rubric and playwright-cli commands; follow it. For
+every state x viewport (390, 1440) x theme (light, dark) the plan's AC-n
+list covers, run the real built page through real auth and data (no mocked
+render), save the PNG at `docs/design/reviews/issue-<N>/<state>-<viewport>-<theme>.png`
+and stage it (`git add docs/design/reviews/`, the runner pushes it like any
+other file), then record `{ "state", "viewport", "theme", "path" }` in
+`build.json`'s `screenshots` array. An empty or missing array is not
+done; `factory-verify` rejects it for missing coverage.
+
+## 5. Escape hatch: back to needs-info mid-build
 
 If the plan turns out to rest on a wrong assumption, or you hit a decision
 only a human can make, stop here rather than guessing:
@@ -52,7 +73,7 @@ only a human can make, stop here rather than guessing:
   preserves both the worktree and the current stage so build can resume
   from here once the question is answered, instead of starting over.
 
-## 5. Write the outputs
+## 6. Write the outputs
 
 Write `.factory/runs/issue-<N>/status-comment.md` using the
 `factory-comment` skill's `status.md` template (stage `build`, progress
@@ -67,10 +88,12 @@ Write `.factory/runs/issue-<N>/status-comment.md` using the
 }
 ```
 
+Add `"screenshots": [...]` (step 4) only on the `ui` route.
+
 `outcome` is optional: `complete` (the default), `blocked` (you cannot go on and a human must
 look; put the reason in `summary`), or `failed`. No other fields are allowed.
 
 `status` is one of `green`, `red` (gate never went green after reasonable
-effort), or `needs-info` (see step 4). Write `"rounds": 1`: the runner counts
+effort), or `needs-info` (see step 5). Write `"rounds": 1`: the runner counts
 build attempts itself and replaces the value. Leave the worktree exactly as you want
 it committed — the runner commits and pushes it verbatim.
