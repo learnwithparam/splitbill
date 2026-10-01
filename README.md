@@ -34,3 +34,11 @@ tests/          bun:test suite
 ```
 
 See `AGENTS.md` for conventions and what's protected.
+
+## Factory demos and checkpoints
+
+`DEMO.md` explains how to run the factory against a disposable `splitbill-demo` copy. Never run it
+against this repo. Each teaching session's starting state is the `checkpoint/<id>` tag in
+`splitbill-demo` that `factory/teach/sessions.json` names. The `01-boundary` … `06-delivery`
+branches and `checkpoint/0N-*` tags in this repo are legacy (they use the old lesson numbering) and
+are kept only for anyone who already cloned them.
