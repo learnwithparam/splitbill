@@ -1,46 +1,25 @@
-Closes #
+<!-- factory-pr fills every section below from the plan and verdict comments.
+     A human PR follows the same sections; delete a section only if it does
+     not apply, never rename one. -->
 
 ## Summary
 
 <!-- One or two sentences: what changed and why. -->
 
-## Acceptance criteria
+Closes #
 
-| AC | Evidence (command / test) | Result |
-|----|----------------------------|--------|
-| AC-1 | | |
-| AC-2 | | |
+## Plan
 
-## Non-goals respected
+<!-- Link to the plan comment (acceptance criteria, non-goals, risk). -->
 
-<!-- List each NG from the plan and confirm the diff doesn't cross it. -->
+## Gate evidence
 
-## The test that bites
+<!-- The gate line from .factory/gates.sh, verbatim. -->
 
-<!-- Name the test. Show it fails on main, passes here, and the command used to check both. -->
+## Verify verdict
 
-- Test: `TODO`
-- Fails on `main`: `TODO command + result`
-- Passes here: `TODO command + result`
+<!-- Link to the verdict comment: per-AC pass/fail and the test that bites. -->
 
-## Gate line
+## Risk and rollback
 
-```
-TODO: paste the exact FACTORY_GATES line from `.factory/gates.sh`
-```
-
-## Protected paths touched
-
-`none` <!-- or list them; a non-"none" value here must be explained and expected -->
-
-## Reviewer findings addressed
-
-<!-- List each finding from factory-reviewer and how it was resolved, or "none". -->
-
-## Human checklist
-
-- [ ] AC table has real evidence, not placeholders
-- [ ] Non-goals respected
-- [ ] Gate line is GREEN
-- [ ] Protected paths are "none", or the change to them is expected and reviewed
-- [ ] I ran the test that bites myself
+<!-- Risk level from the plan, and how to roll this back if it goes wrong. -->
