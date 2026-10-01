@@ -1,21 +1,20 @@
 # CI/CD run mode (plan "Run anywhere"). Written by `factory install --ci` as
-# `factory.yml.example` — GitHub only runs a workflow whose filename ends in
+# `factory.yml.example`, GitHub only runs a workflow whose filename ends in
 # .yml/.yaml, so this stays inert on its own. To turn it on:
 #   1. rename this file to `.github/workflows/factory.yml`
 #   2. add repo secrets FACTORY_GH_TOKEN (fine-grained PAT or GitHub App
-#      install token with contents+issues+pull-requests read/write — a plain
+#      install token with contents+issues+pull-requests read/write, a plain
 #      GITHUB_TOKEN-authored PR never triggers this repo's own CI, which
 #      defeats the point) and ANTHROPIC_API_KEY
 #   3. set the repo VARIABLE FACTORY_MODE=actions (Settings > Secrets and
-#      variables > Actions > Variables) — `factory doctor` on a local machine
-#      warns if this is set while you also start a local watcher, since only
-#      one mode should drive a repo at a time.
+#      variables > Actions > Variables). Only one mode should drive a repo at
+#      a time, so do not also run a local watcher against it.
 #
 # The trust rule matches src/chatops.ts's isTrusted(): OWNER, MEMBER or
 # COLLABORATOR only. The `if:` below is a first filter to avoid spending a
 # runner-minute on an untrusted event; `factory run` re-derives the same
 # check from the issue thread before it does anything (audit finding
-# "prompt injection" lesson — a workflow-level check alone is not enough,
+# "prompt injection" lesson, a workflow-level check alone is not enough,
 # since the comment body itself is attacker-controlled).
 name: factory
 
@@ -36,13 +35,21 @@ on:
         required: false
 
 env:
-  FACTORY_RUNNER_REF: v2.1.0 # pinned software-factory release; bump deliberately
+  FACTORY_RUNNER_REF: v2.12.2 # pinned software-factory release; bump deliberately
   FACTORY_RUNNER_REPO: learnwithparam/software-factory
-  CLAUDE_CODE_VERSION: "2.0.5" # pinned claude, same version the Dockerfile installs
+  CLAUDE_CODE_VERSION: "2.1.286" # pinned claude, same version the Dockerfile installs
+  # Pins for every agent. The "Install agents" step installs the ones named in the repo VARIABLE
+  # FACTORY_AGENTS (space separated, default "claude"); add a repo secret for each one's key
+  # (docs/agents.md lists them). Cursor is host-only. A key you did not set stays empty.
+  CODEX_VERSION: "0.156.1"
+  GEMINI_VERSION: "0.61.0"
+  OPENCODE_VERSION: "1.18.32"
+  PI_VERSION: "0.73.1"
+  MASTRACODE_VERSION: "0.42.0"
 
 # One workflow run in flight per issue at a time; a second labeled/comment
 # event on the same issue queues behind it instead of racing a second
-# Actions runner against the first (claim() is still a real CAS underneath —
+# Actions runner against the first (claim() is still a real CAS underneath,
 # this just avoids burning two runners on the same issue).
 concurrency:
   group: factory-issue-${{ github.event.issue.number || 'scheduled' }}
@@ -62,6 +69,15 @@ jobs:
       - name: Checkout target repo
         uses: actions/checkout@v4
 
+      # A placeholder, not a no-op you can skip: `bun ci`/`npm ci` alone is not
+      # enough on a fresh Actions runner for a stack other than Bun/Node (a
+      # Python repo needs actions/setup-python first, etc). Add whatever this
+      # repo's stack needs here, before `factory run` builds and gates on it.
+      # `config.setup` in .factory/config.json (e.g. `npm ci`) still runs
+      # after this, once per worktree — this step is for the runtime itself.
+      - name: Set up your toolchain
+        run: echo "no language runtime needed beyond what ubuntu-latest ships, or add a setup step here"
+
       - name: Checkout software-factory (pinned)
         uses: actions/checkout@v4
         with:
@@ -76,7 +92,22 @@ jobs:
       - run: bun install --frozen-lockfile
         working-directory: .factory-runner
 
-      - run: npm install -g "@anthropic-ai/claude-code@${{ env.CLAUDE_CODE_VERSION }}"
+      - name: Install agents
+        env:
+          AGENTS: ${{ vars.FACTORY_AGENTS || 'claude' }}
+        run: |
+          for agent in $AGENTS; do
+            case "$agent" in
+              claude) pkg="@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" ;;
+              codex) pkg="@openai/codex@${CODEX_VERSION}" ;;
+              gemini) pkg="@google/gemini-cli@${GEMINI_VERSION}" ;;
+              opencode) pkg="opencode-ai@${OPENCODE_VERSION}" ;;
+              pi) pkg="@mariozechner/pi-coding-agent@${PI_VERSION}" ;;
+              mastracode) pkg="mastracode@${MASTRACODE_VERSION}" ;;
+              *) echo "unknown agent $agent (cursor is host-only)" >&2; exit 1 ;;
+            esac
+            npm install -g "$pkg"
+          done
 
       - name: gh auth setup-git
         env:
@@ -88,6 +119,16 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.FACTORY_GH_TOKEN }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_AUTH_TOKEN: ${{ secrets.ANTHROPIC_AUTH_TOKEN }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
         run: bun bin/factory run --repo-dir "${{ github.workspace }}" --issue ${{ github.event.issue.number }}
 
       - name: factory park (on failure)
@@ -97,7 +138,7 @@ jobs:
           GH_TOKEN: ${{ secrets.FACTORY_GH_TOKEN }}
         run: |
           bun bin/factory park --repo-dir "${{ github.workspace }}" --issue ${{ github.event.issue.number }} \
-            --reason "CI run failed or timed out — see the Actions run for this workflow"
+            --reason "CI run failed or timed out, see the Actions run for this workflow"
 
   tick:
     if: vars.FACTORY_MODE == 'actions' && github.event_name == 'schedule' && github.event.schedule == '*/30 * * * *'
@@ -105,6 +146,10 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+      # See run-issue's "Set up your toolchain" step: `factory tick` can also
+      # build and gate an issue, so it needs this repo's runtime too.
+      - name: Set up your toolchain
+        run: echo "no language runtime needed beyond what ubuntu-latest ships, or add a setup step here"
       - uses: actions/checkout@v4
         with:
           repository: ${{ env.FACTORY_RUNNER_REPO }}
@@ -115,7 +160,22 @@ jobs:
           bun-version: "1.3"
       - run: bun install --frozen-lockfile
         working-directory: .factory-runner
-      - run: npm install -g "@anthropic-ai/claude-code@${{ env.CLAUDE_CODE_VERSION }}"
+      - name: Install agents
+        env:
+          AGENTS: ${{ vars.FACTORY_AGENTS || 'claude' }}
+        run: |
+          for agent in $AGENTS; do
+            case "$agent" in
+              claude) pkg="@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" ;;
+              codex) pkg="@openai/codex@${CODEX_VERSION}" ;;
+              gemini) pkg="@google/gemini-cli@${GEMINI_VERSION}" ;;
+              opencode) pkg="opencode-ai@${OPENCODE_VERSION}" ;;
+              pi) pkg="@mariozechner/pi-coding-agent@${PI_VERSION}" ;;
+              mastracode) pkg="mastracode@${MASTRACODE_VERSION}" ;;
+              *) echo "unknown agent $agent (cursor is host-only)" >&2; exit 1 ;;
+            esac
+            npm install -g "$pkg"
+          done
       - env:
           GH_TOKEN: ${{ secrets.FACTORY_GH_TOKEN }}
         run: gh auth setup-git
@@ -124,6 +184,16 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.FACTORY_GH_TOKEN }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_AUTH_TOKEN: ${{ secrets.ANTHROPIC_AUTH_TOKEN }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
         run: bun bin/factory tick --repo-dir "${{ github.workspace }}"
 
   scan:
@@ -149,7 +219,7 @@ jobs:
         run: bun bin/factory scan --repo-dir "${{ github.workspace }}"
 
   # `workflow_dispatch`: run one issue if `issue` was given, otherwise one
-  # tick — the manual escape hatch for "nothing fired and I don't want to
+  # tick, the manual escape hatch for "nothing fired and I don't want to
   # wait 30 minutes."
   manual:
     if: vars.FACTORY_MODE == 'actions' && github.event_name == 'workflow_dispatch'
@@ -157,6 +227,9 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+      # See run-issue's "Set up your toolchain" step.
+      - name: Set up your toolchain
+        run: echo "no language runtime needed beyond what ubuntu-latest ships, or add a setup step here"
       - uses: actions/checkout@v4
         with:
           repository: ${{ env.FACTORY_RUNNER_REPO }}
@@ -167,7 +240,22 @@ jobs:
           bun-version: "1.3"
       - run: bun install --frozen-lockfile
         working-directory: .factory-runner
-      - run: npm install -g "@anthropic-ai/claude-code@${{ env.CLAUDE_CODE_VERSION }}"
+      - name: Install agents
+        env:
+          AGENTS: ${{ vars.FACTORY_AGENTS || 'claude' }}
+        run: |
+          for agent in $AGENTS; do
+            case "$agent" in
+              claude) pkg="@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" ;;
+              codex) pkg="@openai/codex@${CODEX_VERSION}" ;;
+              gemini) pkg="@google/gemini-cli@${GEMINI_VERSION}" ;;
+              opencode) pkg="opencode-ai@${OPENCODE_VERSION}" ;;
+              pi) pkg="@mariozechner/pi-coding-agent@${PI_VERSION}" ;;
+              mastracode) pkg="mastracode@${MASTRACODE_VERSION}" ;;
+              *) echo "unknown agent $agent (cursor is host-only)" >&2; exit 1 ;;
+            esac
+            npm install -g "$pkg"
+          done
       - env:
           GH_TOKEN: ${{ secrets.FACTORY_GH_TOKEN }}
         run: gh auth setup-git
@@ -176,6 +264,16 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.FACTORY_GH_TOKEN }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_AUTH_TOKEN: ${{ secrets.ANTHROPIC_AUTH_TOKEN }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
         run: |
           if [ -n "${{ github.event.inputs.issue }}" ]; then
             bun bin/factory run --repo-dir "${{ github.workspace }}" --issue ${{ github.event.inputs.issue }}
