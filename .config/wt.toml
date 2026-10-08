@@ -1,0 +1,8 @@
+# worktrunk hooks: each worktree gets its own packages, its own port and its own database file.
+
+[pre-start]
+deps = "bun install --frozen-lockfile > /dev/null"
+env = "echo PORT={{ branch | hash_port }} > .env && echo SPLITBILL_DB=splitbill_{{ branch | sanitize_db }}.sqlite >> .env"
+
+[pre-remove]
+drop = "rm -f splitbill_{{ branch | sanitize_db }}.sqlite"
